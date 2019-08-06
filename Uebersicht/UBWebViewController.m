@@ -8,6 +8,7 @@
 
 #import "UBWebViewController.h"
 #import "UBLocation.h"
+#import "UBWebView.h"
 
 @implementation UBWebViewController {
     NSURL* url;
@@ -50,7 +51,7 @@
 
 - (WKWebView*)buildWebView:(NSRect)frame
 {
-    WKWebView* webView = [[WKWebView alloc]
+    WKWebView* webView = [[UBWebView alloc]
         initWithFrame: frame
         configuration: [self sharedConfig]
     ];
@@ -183,6 +184,17 @@
     ];
 }
 
-
+- (void)checkIsInsideWidget:(NSPoint)aPoint
+          completionHandler:(void (^)(NSNumber*, NSError*))completionHandler
+{
+    NSString* command = [NSString
+        stringWithFormat:@"document.elementFromPoint(%f, %f).id !== 'uebersicht'",
+        aPoint.x, aPoint.y
+    ];
+    [(WKWebView *)self.view
+        evaluateJavaScript: command
+        completionHandler: completionHandler
+    ];
+}
 
 @end

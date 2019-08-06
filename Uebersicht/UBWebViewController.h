@@ -18,5 +18,7 @@
 - (void)reload;
 - (void)redraw;
 - (void)destroy;
+- (void)checkIsInsideWidget:(NSPoint)aPoint
+          completionHandler:(void (^)(NSNumber*, NSError*))completionHandler;
 
 @end

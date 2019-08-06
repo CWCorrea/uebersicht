@@ -18,6 +18,8 @@
 
 @implementation UBWindow {
     UBWebViewController* webViewController;
+    NSTrackingArea* trackingArea;
+    BOOL hasMouse;
 }
 
 - (id)init
@@ -44,17 +46,66 @@
         [self disableSnapshotRestoration];
         [self setDisplaysWhenScreenProfileChanges:YES];
         [self setReleasedWhenClosed:NO];
+        [self setIgnoresMouseEvents:YES];
         
         webViewController = [[UBWebViewController alloc]
             initWithFrame: [self frame]
         ];
         [self setContentView:webViewController.view];
+        hasMouse = YES;
+        trackingArea = [[NSTrackingArea alloc]
+            initWithRect:self.contentView.bounds
+            options: NSTrackingMouseMoved|NSTrackingMouseEnteredAndExited|NSTrackingActiveAlways|NSTrackingInVisibleRect
+            owner:self
+            userInfo:nil
+        ];
+        
+        [self.contentView addTrackingArea:trackingArea];
     }
 
     return self;
 }
 
+- (void)mouseMoved:(NSEvent*)event
+{
+    if (self.ignoresMouseEvents) {
+       [self.contentView mouseMoved:event];
+    }
+    
+    NSPoint location = [self.contentView
+        convertPoint: [event locationInWindow]
+        toView: nil
+    ];
+    [self acceptEventsIfAboveWidget: location];
+}
 
+- (void)mouseEntered:(NSEvent*)event
+{
+    hasMouse = YES;
+    if (self.ignoresMouseEvents) {
+       [self.contentView mouseEntered:event];
+    }
+}
+
+- (void)mouseExited:(NSEvent*)event
+{
+    hasMouse = NO;
+    if (self.ignoresMouseEvents) {
+        [self.contentView mouseExited:event];
+    }
+}
+
+
+- (void)acceptEventsIfAboveWidget:(NSPoint)point
+{
+    NSWindow* __weak this = self;
+    [webViewController
+        checkIsInsideWidget: point
+        completionHandler: ^(NSNumber* result, NSError* err) {
+            [this setIgnoresMouseEvents: ![result boolValue]];
+        }
+    ];
+}
 
 - (void)loadUrl:(NSURL*)url
 {
@@ -95,12 +146,13 @@
 
 - (void)sendToDesktop
 {
-    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-    if ([[defaults valueForKey:@"compatibilityMode"] boolValue]) {
-        [self setLevel:kCGDesktopWindowLevel - 1];
-    } else {
-        [self setLevel:kCGDesktopWindowLevel];
-    }
+    [self setLevel:kCGNormalWindowLevel-1];
+//    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
+//    if ([[defaults valueForKey:@"compatibilityMode"] boolValue]) {
+//        [self setLevel:kCGDesktopWindowLevel - 1];
+//    } else {
+//        [self setLevel:kCGDesktopWindowLevel];
+//    }
 }
 
 - (void)comeToFront
@@ -122,7 +174,8 @@
 #pragma mark flags
 #
 
-- (BOOL)canBecomeKeyWindow { return [self isInFront]; }
+- (BOOL)isKeyWindow { return hasMouse; }
+- (BOOL)canBecomeKeyWindow { return YES; }
 - (BOOL)canBecomeMainWindow { return [self isInFront]; }
 - (BOOL)acceptsFirstResponder { return [self isInFront]; }
 - (BOOL)acceptsMouseMovedEvents { return [self isInFront]; }

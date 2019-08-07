@@ -184,17 +184,4 @@
     ];
 }
 
-- (void)checkIsInsideWidget:(NSPoint)aPoint
-          completionHandler:(void (^)(NSNumber*, NSError*))completionHandler
-{
-    NSString* command = [NSString
-        stringWithFormat:@"document.elementFromPoint(%f, %f).id !== 'uebersicht'",
-        aPoint.x, aPoint.y
-    ];
-    [(WKWebView *)self.view
-        evaluateJavaScript: command
-        completionHandler: completionHandler
-    ];
-}
-
 @end

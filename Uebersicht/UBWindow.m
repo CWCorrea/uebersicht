@@ -19,7 +19,6 @@
 @implementation UBWindow {
     UBWebViewController* webViewController;
     NSTrackingArea* trackingArea;
-    BOOL hasMouse;
 }
 
 - (id)init
@@ -52,59 +51,39 @@
             initWithFrame: [self frame]
         ];
         [self setContentView:webViewController.view];
-        hasMouse = YES;
-        trackingArea = [[NSTrackingArea alloc]
-            initWithRect:self.contentView.bounds
-            options: NSTrackingMouseMoved|NSTrackingMouseEnteredAndExited|NSTrackingActiveAlways|NSTrackingInVisibleRect
-            owner:self
-            userInfo:nil
-        ];
-        
-        [self.contentView addTrackingArea:trackingArea];
+        [self setupTrackingArea];
     }
 
     return self;
 }
 
-- (void)mouseMoved:(NSEvent*)event
+
+
+- (void)setupTrackingArea
 {
-    if (self.ignoresMouseEvents) {
-       [self.contentView mouseMoved:event];
-    }
-    
-    NSPoint location = [self.contentView
-        convertPoint: [event locationInWindow]
-        toView: nil
+    trackingArea = [[NSTrackingArea alloc]
+        initWithRect: self.contentView.bounds
+        options: NSTrackingMouseMoved|NSTrackingMouseEnteredAndExited|NSTrackingActiveAlways
+        owner: nil
+        userInfo: nil
     ];
-    [self acceptEventsIfAboveWidget: location];
+    [self.contentView addTrackingArea:trackingArea];
 }
 
-- (void)mouseEntered:(NSEvent*)event
+- (void)setFrame:(NSRect)newFrame display:(BOOL)doDisplay
 {
-    hasMouse = YES;
-    if (self.ignoresMouseEvents) {
-       [self.contentView mouseEntered:event];
+    [super setFrame:newFrame display:doDisplay];
+    [self updateTrackingArea];
+}
+
+- (void)updateTrackingArea
+{
+    if (trackingArea != nil) {
+        [self.contentView removeTrackingArea:trackingArea];
     }
-}
-
-- (void)mouseExited:(NSEvent*)event
-{
-    hasMouse = NO;
-    if (self.ignoresMouseEvents) {
-        [self.contentView mouseExited:event];
+    if (self.contentView) {
+        [self setupTrackingArea];
     }
-}
-
-
-- (void)acceptEventsIfAboveWidget:(NSPoint)point
-{
-    NSWindow* __weak this = self;
-    [webViewController
-        checkIsInsideWidget: point
-        completionHandler: ^(NSNumber* result, NSError* err) {
-            [this setIgnoresMouseEvents: ![result boolValue]];
-        }
-    ];
 }
 
 - (void)loadUrl:(NSURL*)url
@@ -174,10 +153,10 @@
 #pragma mark flags
 #
 
-- (BOOL)isKeyWindow { return hasMouse; }
+- (BOOL)isKeyWindow { return YES; }
 - (BOOL)canBecomeKeyWindow { return YES; }
-- (BOOL)canBecomeMainWindow { return [self isInFront]; }
+- (BOOL)canBecomeMainWindow { return YES; }
 - (BOOL)acceptsFirstResponder { return [self isInFront]; }
-- (BOOL)acceptsMouseMovedEvents { return [self isInFront]; }
+- (BOOL)acceptsMouseMovedEvents { return YES; }
 
 @end
